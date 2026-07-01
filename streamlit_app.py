@@ -1,3 +1,20 @@
+import sys
+import subprocess
+
+# --- AUTO-INSTALL MISSING PACKAGES (Streamlit Cloud Recovery) ---
+required_packages = {
+    "pandas": "pandas",
+    "numpy": "numpy",
+    "scikit-learn": "sklearn",
+    "plotly": "plotly"
+}
+
+for package, import_name in required_packages.items():
+    try:
+        __import__(import_name)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -71,7 +88,7 @@ page = st.sidebar.radio("Go to Page:", ["📊 Live Analytics & Model Training", 
 # Preprocess & Feature Engineer data for modeling
 def preprocess_data(data):
     if data.empty:
-        return None, None, None, None, None
+        return None, None, None
     
     # Feature Engineering matching the analytical design spec
     processed = data.copy()
@@ -221,6 +238,10 @@ elif page == "🔮 Real-Time Churn Predictor":
     st.header("🔮 Customer Churn Risk What-If Simulator")
     st.markdown("Modify customer demographics and balance attributes in the sidebar panel to see their real-time risk score.")
     
+    if df.empty:
+        st.warning("⚠️ 'churn_data.csv' is missing. Please download it from the dashboard and place it in the same folder as this script to enable the churn predictor.")
+        st.stop()
+        
     # Setup trained model for deployment prediction
     X, y, feature_names = preprocess_data(df)
     scaler = StandardScaler()
