@@ -50,8 +50,9 @@ if not SKLEARN_AVAILABLE:
             self.scale_ = None
             
         def fit(self, X):
-            self.mean_ = np.mean(X, axis=0)
-            self.scale_ = np.std(X, axis=0)
+            X_arr = np.array(X, dtype=float)
+            self.mean_ = np.mean(X_arr, axis=0)
+            self.scale_ = np.std(X_arr, axis=0)
             if isinstance(self.scale_, np.ndarray):
                 self.scale_[self.scale_ == 0] = 1.0
             elif self.scale_ == 0:
@@ -59,7 +60,8 @@ if not SKLEARN_AVAILABLE:
             return self
             
         def transform(self, X):
-            return (X - self.mean_) / self.scale_
+            X_arr = np.array(X, dtype=float)
+            return (X_arr - self.mean_) / self.scale_
             
         def fit_transform(self, X):
             self.fit(X)
