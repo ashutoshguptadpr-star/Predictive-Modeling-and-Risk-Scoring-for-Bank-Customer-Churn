@@ -278,35 +278,10 @@ This production-ready dashboard implements predictive churn models, real-time ri
 and what-if calculators based on Google Cloud financial analytics practices.
 """)
 
-# --- COMPATIBILITY ALERT BOX ---
-if not PLOTLY_AVAILABLE or not SKLEARN_AVAILABLE:
-    with st.expander("⚠️ STREAMLIT CLOUD DEPLOYMENT HEALTH ALERT (Click to Expand)", expanded=True):
-        st.warning("""
-        **Your Dashboard is running in Safe Fallback Mode.** 
-        
-        Our bulletproof fallback engine has automatically taken over so the dashboard doesn't crash! 
-        - **Missing scikit-learn:** Handled by our native Python/Numpy Machine Learning library.
-        - **Missing Plotly:** Handled by Streamlit's native responsive visualization suite.
-        
-        **How to unlock full Plotly & Scikit-Learn graphics:**
-        Streamlit Cloud did not find or process your `requirements.txt` file yet. To fix this:
-        1. Make sure you have a file named exactly **`requirements.txt`** (lowercase, with no typos).
-        2. Place this file in the **exact same root directory** of your GitHub repository as your **`app.py`**.
-        3. Make sure it contains these exact contents:
-           ```text
-           streamlit
-           pandas
-           numpy
-           scikit-learn
-           plotly
-           ```
-        Streamlit Cloud will detect this file and automatically install all packages in the background in less than a minute!
-        """)
-
 # --- SIDEBAR: NAVIGATION AND CALCULATOR ---
 st.sidebar.image("https://www.gstatic.com/images/branding/googlelogo/svg/google_logo_color_272x92dp.png", width=120)
 st.sidebar.markdown("### 🎛️ Navigation & Inputs")
-page = st.sidebar.radio("Go to Page:", ["📊 Live Analytics & Model Training", "🔮 Real-Time Churn Predictor", "📄 Executive Summary & Guide"])
+page = st.sidebar.radio("Go to Page:", ["📊 Live Analytics & Model Training", "🔮 Real-Time Churn Predictor"])
 
 # Preprocess & Feature Engineer data for modeling
 def preprocess_data(data):
@@ -633,63 +608,3 @@ elif page == "🔮 Real-Time Churn Predictor":
                 st.write(action)
         else:
             st.write("✨ Customer is currently highly loyal. No active intervention needed. Maintain standardized automated engagement campaigns.")
-
-
-# --- PAGE 3: GUIDE & EXECUTIVE SUMMARY ---
-else:
-    st.header("📄 Project Documentation & Deployment Guide")
-    st.markdown("Prepared by **Ashutosh Gupta**, Lead Financial Analyst and Advisor.")
-
-    doc_tab1, doc_tab2 = st.tabs(["🚀 Deploying this App to Streamlit", "📈 Executive Summary"])
-    
-    with doc_tab1:
-        st.subheader("How to upload and run this dashboard in Streamlit Community Cloud")
-        st.markdown("""
-        ### Step 1: Create a GitHub Repository
-        1. Log in to [GitHub](https://github.com) and click **New Repository**.
-        2. Name it `bank-customer-churn-dashboard`.
-        3. Keep it Public (or Private) and check **Add a README file**. Click **Create Repository**.
-
-        ### Step 2: Upload Project Files
-        You need exactly **3 files** in your repository:
-        1. **`app.py`** (This Python file - copy the script from the code panel).
-        2. **`requirements.txt`** (Tells Streamlit what packages to install).
-        3. **`churn_data.csv`** (Your parsed dataset).
-
-        You can copy the code and download the CSV directly from the dashboard panel and push them using terminal commands:
-        ```bash
-        git clone <your-github-repo-url>
-        cd bank-customer-churn-dashboard
-        # Put app.py, requirements.txt, and churn_data.csv inside the directory
-        git add .
-        git commit -m "Deploy bank customer churn predictive analytics"
-        git push origin main
-        ```
-
-        ### Step 3: Deploy to Streamlit Community Cloud
-        1. Go to [share.streamlit.io](https://share.streamlit.io) and log in with your GitHub account.
-        2. Click **New App** in the top-right corner.
-        3. Choose your Repository, Branch (`main`), and set the main file path to **`app.py`**.
-        4. Click **Deploy!** In less than a minute, your interactive churn predictor will be live on a public URL!
-        """)
-
-    with doc_tab2:
-        st.subheader("📈 Executive Summary for Strategic Bank Stakeholders")
-        st.markdown("""
-        ### 🏦 Predictive churn Risk Analytics & Retention Strategy
-        
-        **To the European Central Bank and Board of Directors, Retail Banking Division:**
-
-        This quantitative investigation reframes customer churn at retail banks from a Demographical perspective into an **Engagement and Relationship-Strength perspective**. Traditional banking strategies often react *after* a customer closes their account, incurring immense replacement costs. Our machine learning intelligence model assigns a **Risk Probability Score** to active clients, allowing proactive retention efforts.
-
-        #### 🔍 Key Analytical Findings:
-        1. **Age Churn Trajectory:** Customer age is the strongest positive driver of churn. Customers between 40-55 show peak churn probability, representing a critical career/retirement asset transition period where clients are sensitive to service quality and cross-bank offers.
-        2. **Product Friction:** Holding 3 or more bank products actually *increases* churn risk. This is counter-intuitive and points to service friction, complex fee structures, or bad bundle fit. 
-        3. **Engagement Lift:** Active member indicators and credit card ownership significantly reduce the log-odds of churning. High-touch clients are highly retained.
-        4. **Geographic Variance:** Clients based in Germany exhibit more than double the average churn rate of Spain or France, requiring a localized review of competitive fee structures and localized retention offers.
-
-        #### 📈 Strategic Recommendations:
-        *   **Implement High-Net-Worth Cross-Selling:** Target high-balance, low-product clients with tailored wealth management consulting instead of broad multi-product email campaigns.
-        *   **Germany Specific Care Plan:** Offer exclusive zero-fee premium accounts for regional accounts with a tenure greater than 3 years in Germany.
-        *   **Precision Target Campaigns:** Shift marketing budgets from expensive mass loyalty rewards to targeted cash-back or active-member bonuses for predicted medium-to-high risk accounts.
-        """)
