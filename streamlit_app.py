@@ -2,8 +2,14 @@ import sys
 import numpy as np
 import pandas as pd
 import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as px_go
+
+# --- ROBUST PLOTLY IMPORT & FALLBACK ENGINE ---
+try:
+    import plotly.express as px
+    import plotly.graph_objects as px_go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
 
 # --- ROBUST SCLEARN IMPORT & FALLBACK ENGINE ---
 try:
@@ -270,6 +276,31 @@ This production-ready dashboard implements predictive churn models, real-time ri
 and what-if calculators based on Google Cloud financial analytics practices.
 """)
 
+# --- COMPATIBILITY ALERT BOX ---
+if not PLOTLY_AVAILABLE or not SKLEARN_AVAILABLE:
+    with st.expander("⚠️ STREAMLIT CLOUD DEPLOYMENT HEALTH ALERT (Click to Expand)", expanded=True):
+        st.warning("""
+        **Your Dashboard is running in Safe Fallback Mode.** 
+        
+        Our bulletproof fallback engine has automatically taken over so the dashboard doesn't crash! 
+        - **Missing scikit-learn:** Handled by our native Python/Numpy Machine Learning library.
+        - **Missing Plotly:** Handled by Streamlit's native responsive visualization suite.
+        
+        **How to unlock full Plotly & Scikit-Learn graphics:**
+        Streamlit Cloud did not find or process your `requirements.txt` file yet. To fix this:
+        1. Make sure you have a file named exactly **`requirements.txt`** (lowercase, with no typos).
+        2. Place this file in the **exact same root directory** of your GitHub repository as your **`app.py`**.
+        3. Make sure it contains these exact contents:
+           ```text
+           streamlit
+           pandas
+           numpy
+           scikit-learn
+           plotly
+           ```
+        Streamlit Cloud will detect this file and automatically install all packages in the background in less than a minute!
+        """)
+
 # --- SIDEBAR: NAVIGATION AND CALCULATOR ---
 st.sidebar.image("https://www.gstatic.com/images/branding/googlelogo/svg/google_logo_color_272x92dp.png", width=120)
 st.sidebar.markdown("### 🎛️ Navigation & Inputs")
@@ -400,27 +431,51 @@ if page == "📊 Live Analytics & Model Training":
             "Sign": ["Positive" if c >= 0 else "Negative" for c in raw_coefficients] if model_type == "Logistic Regression (Standardized)" else ["Positive"]*len(importances)
         }).sort_values(by="Importance", ascending=True)
         
-        fig = px.bar(
-            importance_df, 
-            y="Feature", 
-            x="Importance", 
-            orientation="h",
-            color="Sign" if model_type == "Logistic Regression (Standardized)" else None,
-            color_discrete_map={"Positive": "#EA4335", "Negative": "#34A853"},
-            title="Relative Churn Drivers (Standardized Coeffs Magnitude)"
-        )
-        fig.update_layout(height=360, margin=dict(l=0, r=0, t=40, b=0), showlegend=model_type == "Logistic Regression (Standardized)")
-        st.plotly_chart(fig, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig = px.bar(
+                importance_df, 
+                y="Feature", 
+                x="Importance", 
+                orientation="h",
+                color="Sign" if model_type == "Logistic Regression (Standardized)" else None,
+                color_discrete_map={"Positive": "#EA4335", "Negative": "#34A853"},
+                title="Relative Churn Drivers (Standardized Coeffs Magnitude)"
+            )
+            fig.update_layout(height=360, margin=dict(l=0, r=0, t=40, b=0), showlegend=model_type == "Logistic Regression (Standardized)")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            # Clean native Streamlit bar chart fallback
+            st.write("**Relative Churn Drivers (Standardized Coeffs Magnitude)**")
+            chart_df = importance_df.set_index("Feature")[["Importance"]]
+            st.bar_chart(chart_df)
 
     # Churn Segment Distributions
     st.subheader("📊 Customer Distributions by Churn Outcome")
+    if not PLOTLY_AVAILABLE:
+        st.info("ℹ️ Plotly is missing. Displaying native responsive Streamlit fallback distributions.")
+        
     d_col1, d_col2 = st.columns(2)
     with d_col1:
-        fig_age = px.histogram(df, x="Age", color="Exited", barmode="group", title="Age Group Distribution vs Churn Status", color_discrete_sequence=["#34A853", "#EA4335"])
-        st.plotly_chart(fig_age, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig_age = px.histogram(df, x="Age", color="Exited", barmode="group", title="Age Group Distribution vs Churn Status", color_discrete_sequence=["#34A853", "#EA4335"])
+            st.plotly_chart(fig_age, use_container_width=True)
+        else:
+            # Group by age and exited for a clean native bar chart
+            age_churn = df.groupby(["Age", "Exited"]).size().unstack(fill_value=0)
+            age_churn.columns = ["Retained (0)", "Exited (1)"]
+            st.write("**Age Group Distribution vs Churn Status**")
+            st.bar_chart(age_churn)
+            
     with d_col2:
-        fig_prod = px.histogram(df, x="NumOfProducts", color="Exited", barmode="group", title="Product Count Distribution vs Churn Status", color_discrete_sequence=["#34A853", "#EA4335"])
-        st.plotly_chart(fig_prod, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig_prod = px.histogram(df, x="NumOfProducts", color="Exited", barmode="group", title="Product Count Distribution vs Churn Status", color_discrete_sequence=["#34A853", "#EA4335"])
+            st.plotly_chart(fig_prod, use_container_width=True)
+        else:
+            # Group by products and exited for a clean native bar chart
+            prod_churn = df.groupby(["NumOfProducts", "Exited"]).size().unstack(fill_value=0)
+            prod_churn.columns = ["Retained (0)", "Exited (1)"]
+            st.write("**Product Count Distribution vs Churn Status**")
+            st.bar_chart(prod_churn)
 
 
 # --- PAGE 2: WHAT-IF CHURN PREDICTOR ---
@@ -501,23 +556,38 @@ elif page == "🔮 Real-Time Churn Predictor":
             color = "#EA4335"
             risk_label = "🔴 HIGH RISK"
             
-        fig_gauge = px_go.Figure(px_go.Indicator(
-            mode = "gauge+number",
-            value = prob * 100,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': f"{risk_label}"},
-            gauge = {
-                'axis': {'range': [None, 100]},
-                'bar': {'color': color},
-                'steps': [
-                    {'range': [0, 30], 'color': "rgba(52, 168, 83, 0.15)"},
-                    {'range': [30, 60], 'color': "rgba(251, 188, 5, 0.15)"},
-                    {'range': [60, 100], 'color': "rgba(234, 67, 53, 0.15)"}
-                ]
-            }
-        ))
-        fig_gauge.update_layout(height=260, margin=dict(l=20, r=20, t=40, b=20))
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig_gauge = px_go.Figure(px_go.Indicator(
+                mode = "gauge+number",
+                value = prob * 100,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': f"{risk_label}"},
+                gauge = {
+                    'axis': {'range': [None, 100]},
+                    'bar': {'color': color},
+                    'steps': [
+                        {'range': [0, 30], 'color': "rgba(52, 168, 83, 0.15)"},
+                        {'range': [30, 60], 'color': "rgba(251, 188, 5, 0.15)"},
+                        {'range': [60, 100], 'color': "rgba(234, 67, 53, 0.15)"}
+                    ]
+                }
+            ))
+            fig_gauge.update_layout(height=260, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_gauge, use_container_width=True)
+        else:
+            # Elegant zero-dependency HTML indicator bar
+            st.markdown(f"""
+            <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-top: 10px;">
+                <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; font-family: sans-serif;">Risk Score</h3>
+                <div style="font-size: 44px; font-weight: 800; color: {color}; margin-bottom: 12px; font-family: sans-serif;">{prob*100:.1f}%</div>
+                <div style="display: inline-block; padding: 6px 16px; background-color: {color}1a; color: {color}; border-radius: 9999px; font-weight: 700; font-size: 13px; margin-bottom: 16px; font-family: sans-serif;">
+                    {risk_label}
+                </div>
+                <div style="background-color: #f1f5f9; border-radius: 9999px; height: 10px; width: 100%; overflow: hidden; position: relative;">
+                    <div style="background-color: {color}; width: {prob*100:.1f}%; height: 100%; border-radius: 9999px;"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
     with g2:
         st.subheader("💡 Churn Driver Insights & retention Advice")
